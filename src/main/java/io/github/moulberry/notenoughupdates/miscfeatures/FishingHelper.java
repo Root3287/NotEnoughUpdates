@@ -147,7 +147,8 @@ public class FishingHelper {
 	}
 
 	private int tickCounter = 0;
-
+	private int coolDownTrigger = 5;
+	private boolean triggerBlock = false;
 	@SubscribeEvent
 	public void onTick(TickEvent.ClientTickEvent event) {
 		if (Minecraft.getMinecraft().thePlayer != null && event.phase == TickEvent.Phase.END) {
@@ -172,6 +173,25 @@ public class FishingHelper {
 				if (hookedWarningStateTicks > 0) {
 					hookedWarningStateTicks--;
 					warningState = PlayerWarningState.FISH_HOOKED;
+
+					if(!triggerBlock){
+						if(coolDownTrigger == 0) {
+							boolean actionResult = Minecraft.getMinecraft().playerController.sendUseItem(
+								Minecraft.getMinecraft().thePlayer,
+								Minecraft.getMinecraft().theWorld,
+								Minecraft.getMinecraft().thePlayer.getHeldItem()
+							);
+		
+							if(actionResult){
+								Minecraft.getMinecraft().thePlayer.swingItem();
+							}
+							Minecraft.getMinecraft().getItemRenderer().resetEquippedProgress();
+
+							triggerBlock = true;
+						}else {
+							coolDownTrigger--;
+						}
+					}
 				} else {
 					warningState = PlayerWarningState.NOTHING;
 					if (Minecraft.getMinecraft().thePlayer.fishEntity != null) {
@@ -179,6 +199,8 @@ public class FishingHelper {
 						for (Map.Entry<WakeChain, List<Integer>> entry : chains.entrySet()) {
 							if (entry.getKey().particleNum >= 3 && entry.getValue().contains(fishEntityId)) {
 								warningState = PlayerWarningState.FISH_INCOMING;
+								coolDownTrigger = 5;
+								triggerBlock = false;
 								break;
 							}
 						}
